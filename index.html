@@ -155,9 +155,8 @@ textarea { min-height: 110px; resize: vertical; }
 </div>
 
 <script>
-// Ontvanger van de antwoorden. Na het bevestigen van FormSubmit krijg je een willekeurige code;
-// zet die hier in plaats van het e-mailadres, dan staat je adres niet meer in de broncode.
-const ONTVANGER = "simon.balder@gmail.com";
+// Web3Forms-toegangscode van Simon (mag openbaar zijn, werkt als alias voor zijn e-mailadres).
+const ACCESS_KEY = "75e31bd8-4c81-4c99-b969-fc12ca3e50aa";
 const MAILADRES = "simon.balder@gmail.com";
 
 const Q = [
@@ -351,17 +350,16 @@ function plainText() { return rows().map(([k, v]) => `${k}: ${v || "-"}`).join("
 async function send() {
   if ($("f_hp")?.value) { screen = "done"; return render(); }
   const btn = $("send"); btn.disabled = true; btn.textContent = "Bezig met versturen…";
-  const payload = { _subject: `Nieuwe jingle-aanvraag: ${A.bedrijf || "onbekend bedrijf"}`, _template: "table", _captcha: "false", _replyto: A.contact?.email || "" };
+  const payload = { access_key: ACCESS_KEY, subject: `Nieuwe jingle-aanvraag: ${A.bedrijf || "onbekend bedrijf"}`, from_name: "Jingle-vragenbox", replyto: A.contact?.email || "", botcheck: "" };
   rows().forEach(([k, v]) => { payload[k] = v || "-"; });
   payload["Suno-schets"] = sunoSketch();
   const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 15000);
   try {
-    const r = await fetch(`https://formsubmit.co/ajax/${ONTVANGER}`, {
+    const r = await fetch("https://api.web3forms.com/submit", {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal,
     });
     const j = await r.json();
-    // Bij "needs Activation" bewaart FormSubmit de inzending en levert hem na bevestiging alsnog af.
-    screen = String(j.success) === "true" || /activat/i.test(j.message || "") ? "done" : "fallback";
+    screen = j.success === true || String(j.success) === "true" ? "done" : "fallback";
   } catch (e) { screen = "fallback"; }
   clearTimeout(timer);
   if (screen === "done") clearDraft();

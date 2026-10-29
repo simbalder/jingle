@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bedrijfsjingle Vragenbox</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: rustige landingsplek met één knop; de vragen zelf leven in een popup, één vraag per scherm met een VU-meter als voortgang. */
+:root {
+  --bg: #eef2f0;
+  --surface: #ffffff;
+  --ink: #13201c;
+  --muted: #5a6b65;
+  --line: #d4ddd9;
+  --accent: #0f7a5c;
+  --accent-ink: #ffffff;
+  --signal: #e2a72e;
+  --chip: #f3f6f5;
+  --scrim: rgba(12, 22, 19, .55);
+  --danger: #b3361f;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1613; --surface: #17221e; --ink: #e6eeea; --muted: #9aaba4; --line: #2b3a35;
+    --accent: #43c59a; --accent-ink: #062018; --signal: #f0bb4a; --chip: #1f2c27;
+    --scrim: rgba(0, 0, 0, .65); --danger: #ff8a70; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1613; --surface: #17221e; --ink: #e6eeea; --muted: #9aaba4; --line: #2b3a35;
+  --accent: #43c59a; --accent-ink: #062018; --signal: #f0bb4a; --chip: #1f2c27;
+  --scrim: rgba(0, 0, 0, .65); --danger: #ff8a70; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+
+/* Landing */
+.landing { min-height: 100%; display: grid; place-items: center; padding-block: 48px; }
+.landing-inner { max-width: 560px; display: grid; gap: 20px; }
+.eyebrow { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.landing h1 { font-family: var(--display); font-weight: 800; font-size: clamp(34px, 7vw, 54px); line-height: 1.02; margin: 0; text-wrap: balance; letter-spacing: -.02em; }
+.landing p { margin: 0; color: var(--muted); max-width: 46ch; }
+.wave { display: flex; align-items: end; gap: 4px; height: 36px; }
+.wave span { width: 6px; border-radius: 3px; background: var(--accent); opacity: .85; animation: bounce 1.4s ease-in-out infinite; }
+.wave span:nth-child(3n) { background: var(--signal); }
+@keyframes bounce { 0%, 100% { transform: scaleY(.45); } 50% { transform: scaleY(1); } }
+.wave span { transform-origin: bottom; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; border-radius: 999px; padding: 12px 22px; font-weight: 600; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); text-decoration: none;
+}
+.btn:hover { filter: brightness(1.06); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn.big { padding: 15px 28px; font-size: 17px; justify-self: start; }
+
+/* Popup */
+.scrim { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; z-index: 50;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+.dialog {
+  width: 100%; max-width: 580px; max-height: 100%; overflow: auto;
+  background: var(--surface); border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.28);
+  display: grid; grid-template-rows: auto 1fr auto;
+}
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px 0; }
+.count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 500; }
+.close { border: 0; background: var(--chip); width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 20px; line-height: 1; color: var(--muted); }
+.meter { display: flex; gap: 3px; padding: 12px 22px 0; }
+.meter i { flex: 1; height: 6px; border-radius: 2px; background: var(--line); transition: background .25s; }
+.meter i.on { background: var(--accent); }
+.meter i.now { background: var(--signal); }
+.dlg-body { padding: 26px 22px 8px; display: grid; gap: 14px; align-content: start; min-height: 300px; }
+.dlg-body h2 { font-family: var(--display); font-weight: 800; font-size: clamp(23px, 4.6vw, 30px); line-height: 1.12; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.help { margin: 0; color: var(--muted); font-size: 15px; }
+.opt { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 14px; font-weight: 600; }
+input[type=text], input[type=email], input[type=tel], textarea {
+  width: 100%; border: 1.5px solid var(--line); background: var(--bg); border-radius: 12px; padding: 13px 14px;
+}
+input:focus, textarea:focus { border-color: var(--accent); outline: none; }
+textarea { min-height: 110px; resize: vertical; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1.5px solid var(--line); background: var(--chip); border-radius: 999px; padding: 9px 15px; cursor: pointer; font-weight: 500; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.err { color: var(--danger); font-size: 14px; margin: 0; min-height: 1.4em; }
+.dlg-foot { display: flex; justify-content: space-between; gap: 10px; padding: 14px 22px 22px; flex-wrap: wrap; }
+.dlg-foot .spacer { flex: 1; }
+.kbd { font-size: 12px; color: var(--muted); align-self: center; }
+
+/* Overzicht */
+.review { display: grid; gap: 0; border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden; }
+.review div { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.review div:first-child { border-top: 0; }
+.review dt { font-size: 13px; color: var(--muted); grid-column: 1; }
+.review dd { margin: 0; grid-column: 1; overflow-wrap: anywhere; white-space: pre-wrap; }
+.review button { grid-column: 2; grid-row: 1 / span 2; align-self: center; border: 0; background: none; color: var(--accent); font-weight: 600; cursor: pointer; }
+.copybox { width: 100%; min-height: 160px; font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.mail { font-weight: 600; user-select: all; overflow-wrap: anywhere; }
+.done-mark { width: 64px; height: 64px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 32px; font-weight: 800; }
+.hp { position: absolute; left: -9999px; }
+
+@media (max-width: 480px) {
+  .scrim { padding: 0; place-items: stretch; }
+  .dialog { border-radius: 0; max-width: none; height: 100%; }
+  .dlg-head { padding-top: max(18px, env(safe-area-inset-top, 0px)); }
+  .dlg-foot { padding-bottom: max(22px, env(safe-area-inset-bottom, 0px)); }
+  .kbd { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .wave span { animation: none; } }
+</style>
+
+<style>body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<main class="landing">
+  <div class="landing-inner">
+    <div class="wave" aria-hidden="true"><span style="height:40%"></span><span style="height:75%;animation-delay:.1s"></span><span style="height:55%;animation-delay:.2s"></span><span style="height:100%;animation-delay:.3s"></span><span style="height:65%;animation-delay:.4s"></span><span style="height:85%;animation-delay:.5s"></span><span style="height:45%;animation-delay:.6s"></span><span style="height:70%;animation-delay:.7s"></span></div>
+    <div class="eyebrow">Jingle op maat</div>
+    <h1>Je bedrijf, in een paar seconden muziek.</h1>
+    <p>Beantwoord 17 korte vragen over je bedrijf en de sfeer die je zoekt. Daarna maak ik een jingle die bij je past. Het invullen duurt ongeveer vijf minuten.</p>
+    <button class="btn big" id="openBtn" type="button">Start de vragenlijst</button>
+  </div>
+</main>
+
+<div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="qTitle">
+  <div class="dialog">
+    <div>
+      <div class="dlg-head">
+        <span class="count" id="count"></span>
+        <button class="close" id="closeBtn" type="button" aria-label="Sluiten">&times;</button>
+      </div>
+      <div class="meter" id="meter" aria-hidden="true"></div>
+    </div>
+    <form class="dlg-body" id="body" novalidate></form>
+    <div class="dlg-foot" id="foot"></div>
+  </div>
+</div>
+
+<script>
+// Ontvanger van de antwoorden. Na het bevestigen van FormSubmit krijg je een willekeurige code;
+// zet die hier in plaats van het e-mailadres, dan staat je adres niet meer in de broncode.
+const ONTVANGER = "simon.balder@gmail.com";
+const MAILADRES = "simon.balder@gmail.com";
+
+const Q = [
+  { id: "bedrijf", type: "text", req: true, title: "Hoe heet je bedrijf?", ph: "Bijv. Bakkerij De Molen" },
+  { id: "wat", type: "textarea", req: true, title: "Wat doet je bedrijf?", help: "Een paar zinnen is genoeg. Wat verkoop of doe je, en voor wie?" },
+  { id: "slogan", type: "text", title: "Heb je een slogan die erin moet?", help: "Laat leeg als je nog geen slogan hebt, dan bedenk ik er een.", ph: "Bijv. Elke dag vers, elke dag De Molen" },
+  { id: "horen", type: "multi", title: "Wat moet er letterlijk in te horen zijn?", help: "Kies alles wat gezongen of gezegd moet worden.",
+    opts: ["Bedrijfsnaam", "Slogan", "Website", "Telefoonnummer", "Plaatsnaam", "Een actie of aanbieding"] },
+  { id: "gebruik", type: "multi", req: true, title: "Waar ga je de jingle gebruiken?",
+    opts: ["Radio", "Social media (Reels, TikTok)", "Website", "Podcast of YouTube", "Wachtmuziek telefoon", "In de winkel", "Beurzen en evenementen", "Tv"] },
+  { id: "lengte", type: "single", req: true, title: "Hoe lang moet de jingle zijn?",
+    opts: ["Geluidslogo (3 tot 5 sec)", "Korte jingle (10 tot 15 sec)", "Radiospot (30 sec)", "Lang (60 sec)", "Heel nummer (2 tot 3 min)"] },
+  { id: "doelgroep", type: "textarea", title: "Wie wil je ermee bereiken?", help: "Bijv. jonge gezinnen in de regio, ondernemers, 50-plussers." },
+  { id: "woorden", type: "text", title: "Welke drie woorden passen bij je bedrijf?", ph: "Bijv. betrouwbaar, lokaal, vrolijk" },
+  { id: "sfeer", type: "multi", req: true, max: 3, title: "Welke sfeer zoek je?", help: "Kies er maximaal drie.",
+    opts: ["Vrolijk", "Energiek", "Warm", "Stoer", "Betrouwbaar", "Luxe", "Speels", "Rustig", "Grappig", "Nostalgisch", "Modern", "Feestelijk"] },
+  { id: "stijl", type: "multi", req: true, max: 2, title: "Welke muziekstijl spreekt je aan?", help: "Kies er maximaal twee.",
+    opts: ["Pop", "Rock", "Akoestisch met gitaar", "Elektronisch of dance", "Jazz of swing", "Hiphop", "Nederlandstalige meezinger", "Country", "Reggae en zomers", "Orkestraal en filmisch", "Funk en soul", "Verras me"] },
+  { id: "tempo", type: "single", req: true, title: "Welk tempo past erbij?", opts: ["Rustig", "Gemiddeld", "Snel en opzwepend"] },
+  { id: "stem", type: "single", req: true, title: "Wat voor stem wil je horen?",
+    opts: ["Mannenstem", "Vrouwenstem", "Duet", "Koor of groep", "Geen zang, alleen muziek", "Maakt niet uit"] },
+  { id: "taal", type: "single", req: true, title: "In welke taal?", opts: ["Nederlands", "Engels", "Nederlands en Engels", "Dialect of streektaal", "Anders"] },
+  { id: "voorbeeld", type: "text", title: "Op welke jingle of artiest mag het lijken?", help: "Een voorbeeld helpt enorm, maar mag ook leeg blijven.", ph: "Bijv. de jingle van Kruidvat, of iets als Racoon" },
+  { id: "niet", type: "text", title: "Wat wil je absoluut niet?", ph: "Bijv. geen rap, niet te zoetsappig" },
+  { id: "contact", type: "contact", req: true, title: "Waar kan ik je bereiken?", help: "Je krijgt de jingle en eventuele vragen via dit adres." },
+  { id: "extra", type: "textarea", title: "Nog iets wat ik moet weten?", help: "Een deadline, het verhaal achter je bedrijf, of iets anders." },
+];
+const LABELS = {
+  bedrijf: "Bedrijf", wat: "Wat doet het bedrijf", slogan: "Slogan", horen: "Moet erin te horen zijn", gebruik: "Gebruik",
+  lengte: "Lengte", doelgroep: "Doelgroep", woorden: "Drie woorden", sfeer: "Sfeer", stijl: "Muziekstijl", tempo: "Tempo",
+  stem: "Stem", taal: "Taal", voorbeeld: "Mag lijken op", niet: "Absoluut niet", naam: "Naam", email: "E-mail", tel: "Telefoon", extra: "Extra",
+};
+
+let A = {};
+let idx = 0;
+let screen = "q"; // q | review | done | fallback
+let fromReview = false;
+try { const s = JSON.parse(localStorage.getItem("jingleDraft") || "null"); if (s) { A = s.A || {}; idx = Math.min(s.idx || 0, Q.length); } } catch (e) {}
+function save() { try { localStorage.setItem("jingleDraft", JSON.stringify({ A, idx })); } catch (e) {} }
+function clearDraft() { try { localStorage.removeItem("jingleDraft"); } catch (e) {} }
+
+const $ = (id) => document.getElementById(id);
+const scrim = $("scrim"), body = $("body"), foot = $("foot"), meter = $("meter"), count = $("count");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+meter.innerHTML = Q.map(() => "<i></i>").join("") + "<i></i>";
+function paintMeter(n) { [...meter.children].forEach((el, i) => { el.className = i < n ? "on" : i === n ? "now" : ""; }); }
+
+function open() { scrim.hidden = false; render(); }
+function close() { scrim.hidden = true; $("openBtn").focus(); }
+$("openBtn").onclick = open;
+$("closeBtn").onclick = close;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !scrim.hidden) close(); });
+
+function render() {
+  if (screen === "q" && idx >= Q.length) screen = "review";
+  if (screen === "q") return renderQ();
+  if (screen === "review") return renderReview();
+  if (screen === "done") return renderDone();
+  if (screen === "fallback") return renderFallback();
+}
+
+function renderQ() {
+  const q = Q[idx];
+  paintMeter(idx);
+  count.textContent = `Vraag ${idx + 1} van ${Q.length}`;
+  let h = `<h2 id="qTitle">${esc(q.title)}</h2>`;
+  if (q.help) h += `<p class="help">${esc(q.help)}</p>`;
+  if (!q.req) h += `<span class="opt">Niet verplicht</span>`;
+  const v = A[q.id];
+  if (q.type === "text") h += `<input type="text" id="f_${q.id}" value="${esc(v || "")}" placeholder="${esc(q.ph || "")}" aria-labelledby="qTitle">`;
+  if (q.type === "textarea") h += `<textarea id="f_${q.id}" aria-labelledby="qTitle">${esc(v || "")}</textarea>`;
+  if (q.type === "single" || q.type === "multi") {
+    const sel = q.type === "multi" ? (v || []) : [v];
+    h += `<div class="chips" role="group" aria-labelledby="qTitle">` +
+      q.opts.map((o) => `<button type="button" class="chip" aria-pressed="${sel.includes(o)}" data-o="${esc(o)}">${esc(o)}</button>`).join("") + `</div>`;
+  }
+  if (q.type === "contact") {
+    const c = v || {};
+    h += `<div class="field"><label for="f_naam">Je naam</label><input type="text" id="f_naam" autocomplete="name" value="${esc(c.naam || "")}"></div>
+      <div class="field"><label for="f_email">E-mailadres</label><input type="email" id="f_email" autocomplete="email" value="${esc(c.email || "")}"></div>
+      <div class="field"><label for="f_tel">Telefoon <span class="opt">niet verplicht</span></label><input type="tel" id="f_tel" autocomplete="tel" value="${esc(c.tel || "")}"></div>`;
+  }
+  h += `<p class="err" id="err" role="alert"></p>`;
+  body.innerHTML = h;
+
+  body.querySelectorAll(".chip").forEach((b) => b.onclick = () => {
+    const o = b.dataset.o;
+    if (q.type === "single") { A[q.id] = o; save(); renderQ(); setTimeout(next, 220); return; }
+    const cur = A[q.id] || [];
+    if (cur.includes(o)) A[q.id] = cur.filter((x) => x !== o);
+    else if (q.max && cur.length >= q.max) { $("err").textContent = `Je kunt er maximaal ${q.max} kiezen. Klik er eerst één uit.`; return; }
+    else A[q.id] = [...cur, o];
+    save(); renderQ();
+    body.querySelector(`.chip[data-o="${CSS.escape(o)}"]`)?.focus();
+  });
+
+  foot.innerHTML = `${idx > 0 ? '<button type="button" class="btn ghost" id="back">Vorige</button>' : ""}
+    <span class="spacer"></span><span class="kbd">Enter = verder</span>
+    <button type="button" class="btn" id="next">${idx === Q.length - 1 || fromReview ? "Naar overzicht" : (!q.req && isEmpty(q) ? "Overslaan" : "Volgende")}</button>`;
+  if ($("back")) $("back").onclick = back;
+  $("next").onclick = next;
+  body.oninput = () => { collect(); const n = $("next"); if (!q.req && idx < Q.length - 1) n.textContent = isEmpty(q) ? "Overslaan" : "Volgende"; };
+  body.onsubmit = (e) => { e.preventDefault(); next(); };
+  body.onkeydown = (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); next(); } };
+  const first = body.querySelector("input, textarea");
+  if (first) first.focus(); else body.querySelector(".chip")?.focus();
+}
+
+function collect() {
+  const q = Q[idx]; if (!q) return;
+  if (q.type === "text" || q.type === "textarea") A[q.id] = $("f_" + q.id).value.trim();
+  if (q.type === "contact") A.contact = { naam: $("f_naam").value.trim(), email: $("f_email").value.trim(), tel: $("f_tel").value.trim() };
+  save();
+}
+function isEmpty(q) {
+  const v = A[q.id];
+  if (q.type === "contact") return !v || !v.naam || !v.email;
+  return v == null || v === "" || (Array.isArray(v) && !v.length);
+}
+function next() {
+  collect();
+  const q = Q[idx];
+  if (q.type === "contact") {
+    const c = A.contact || {};
+    if (!c.naam) return fail("Vul je naam in.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email || "")) return fail("Vul een geldig e-mailadres in, bijvoorbeeld naam@bedrijf.nl.");
+  } else if (q.req && isEmpty(q)) {
+    return fail(q.type === "multi" || q.type === "single" ? "Kies minstens één optie om verder te gaan." : "Deze vraag is nodig om de jingle te maken.");
+  }
+  idx = fromReview ? Q.length : idx + 1; if (fromReview) { fromReview = false; screen = "review"; } save(); render();
+}
+function back() { collect(); if (screen === "review") { screen = "q"; idx = Q.length - 1; } else idx = Math.max(0, idx - 1); save(); render(); }
+function fail(msg) { $("err").textContent = msg; }
+
+function rows() {
+  const out = [];
+  Q.forEach((q, i) => {
+    if (q.type === "contact") {
+      const c = A.contact || {};
+      out.push([LABELS.naam, c.naam || "", i], [LABELS.email, c.email || "", i]);
+      if (c.tel) out.push([LABELS.tel, c.tel, i]);
+      return;
+    }
+    const v = A[q.id];
+    out.push([LABELS[q.id], Array.isArray(v) ? v.join(", ") : (v || ""), i]);
+  });
+  return out;
+}
+
+function renderReview() {
+  screen = "review";
+  paintMeter(Q.length);
+  count.textContent = "Overzicht";
+  body.innerHTML = `<h2 id="qTitle">Klopt alles?</h2><p class="help">Controleer je antwoorden. Klik op Wijzig om iets aan te passen.</p>
+    <dl class="review">${rows().map(([k, v, i]) => `<div><dt>${esc(k)}</dt><dd>${v ? esc(v) : "<span class='help'>Niet ingevuld</span>"}</dd><button type="button" data-i="${i}">Wijzig</button></div>`).join("")}</dl>
+    <input class="hp" type="text" id="f_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <p class="err" id="err" role="alert"></p>`;
+  body.querySelectorAll(".review button").forEach((b) => b.onclick = () => { screen = "q"; fromReview = true; idx = +b.dataset.i; render(); });
+  foot.innerHTML = `<button type="button" class="btn ghost" id="back">Vorige</button><span class="spacer"></span><button type="button" class="btn" id="send">Verstuur aanvraag</button>`;
+  $("back").onclick = back;
+  $("send").onclick = send;
+  body.onsubmit = (e) => e.preventDefault();
+  body.oninput = null; body.onkeydown = null;
+  $("send").focus();
+}
+
+// Een eerste Suno-schets, zodat Simon direct kan beginnen.
+const EN = {
+  "Vrolijk": "happy", "Energiek": "energetic", "Warm": "warm", "Stoer": "bold", "Betrouwbaar": "trustworthy", "Luxe": "luxurious", "Speels": "playful",
+  "Rustig": "calm", "Grappig": "funny", "Nostalgisch": "nostalgic", "Modern": "modern", "Feestelijk": "festive",
+  "Pop": "pop", "Rock": "rock", "Akoestisch met gitaar": "acoustic guitar", "Elektronisch of dance": "electronic dance", "Jazz of swing": "jazz swing",
+  "Hiphop": "hip hop", "Nederlandstalige meezinger": "dutch singalong", "Country": "country", "Reggae en zomers": "summery reggae",
+  "Orkestraal en filmisch": "cinematic orchestral", "Funk en soul": "funk soul", "Verras me": "",
+  "Snel en opzwepend": "fast upbeat tempo", "Gemiddeld": "mid tempo", "Mannenstem": "male vocals", "Vrouwenstem": "female vocals", "Duet": "male and female duet",
+  "Koor of groep": "group choir vocals", "Geen zang, alleen muziek": "instrumental", "Maakt niet uit": "",
+  "Nederlands": "dutch lyrics", "Engels": "english lyrics", "Nederlands en Engels": "dutch and english lyrics", "Dialect of streektaal": "dutch dialect lyrics", "Anders": "",
+};
+function sunoSketch() {
+  const t = (x) => EN[x] ?? x;
+  const tempo = A.tempo === "Rustig" ? "slow tempo" : t(A.tempo);
+  const parts = [...(A.stijl || []).map(t), ...(A.sfeer || []).map(t), tempo, t(A.stem), t(A.taal), "short catchy commercial jingle", "memorable hook", "clean sound logo ending"].filter(Boolean);
+  const lyr = A.stem === "Geen zang, alleen muziek" ? "[Instrumental]\n[Sound logo]" : `[Hook]\n${A.slogan || "(slogan nog te bedenken)"}\n\n[Outro]\n${A.bedrijf || ""}`;
+  return `Title: ${A.bedrijf || ""} Jingle\nStyle: ${parts.join(", ")}\nLength: ${A.lengte || ""}\nLyrics:\n${lyr}`;
+}
+function plainText() { return rows().map(([k, v]) => `${k}: ${v || "-"}`).join("\n") + "\n\n--- Suno-schets ---\n" + sunoSketch(); }
+
+async function send() {
+  if ($("f_hp")?.value) { screen = "done"; return render(); }
+  const btn = $("send"); btn.disabled = true; btn.textContent = "Bezig met versturen…";
+  const payload = { _subject: `Nieuwe jingle-aanvraag: ${A.bedrijf || "onbekend bedrijf"}`, _template: "table", _captcha: "false", _replyto: A.contact?.email || "" };
+  rows().forEach(([k, v]) => { payload[k] = v || "-"; });
+  payload["Suno-schets"] = sunoSketch();
+  const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const r = await fetch(`https://formsubmit.co/ajax/${ONTVANGER}`, {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal,
+    });
+    const j = await r.json();
+    screen = String(j.success) === "true" ? "done" : "fallback";
+  } catch (e) { screen = "fallback"; }
+  clearTimeout(timer);
+  if (screen === "done") clearDraft();
+  render();
+}
+
+function renderDone() {
+  paintMeter(Q.length + 1);
+  count.textContent = "Verstuurd";
+  body.innerHTML = `<div class="done-mark" aria-hidden="true">✓</div><h2 id="qTitle">Bedankt${A.contact?.naam ? ", " + esc(A.contact.naam.split(" ")[0]) : ""}!</h2>
+    <p class="help">Je aanvraag is verstuurd. Ik ga aan de slag met een jingle voor ${esc(A.bedrijf || "je bedrijf")} en neem contact met je op via ${esc(A.contact?.email || "e-mail")}.</p>`;
+  foot.innerHTML = `<span class="spacer"></span><button type="button" class="btn" id="fin">Sluiten</button>`;
+  $("fin").onclick = () => { A = {}; idx = 0; screen = "q"; close(); };
+}
+
+function renderFallback() {
+  count.textContent = "Bijna klaar";
+  const txt = plainText();
+  const mailto = `mailto:${MAILADRES}?subject=${encodeURIComponent("Jingle-aanvraag: " + (A.bedrijf || ""))}&body=${encodeURIComponent(txt)}`;
+  body.innerHTML = `<h2 id="qTitle">Stuur je antwoorden even zelf door</h2>
+    <p class="help">Automatisch versturen lukte niet. Je antwoorden zijn niet kwijt: kopieer ze hieronder en mail ze naar</p>
+    <p class="mail">${esc(MAILADRES)}</p>
+    <textarea class="copybox" id="f_copy" readonly>${esc(txt)}</textarea>
+    <p class="err" id="err" role="status"></p>`;
+  foot.innerHTML = `<button type="button" class="btn ghost" id="retry">Opnieuw proberen</button><span class="spacer"></span>
+    <a class="btn ghost" href="${esc(mailto)}" target="_blank" rel="noopener">Open mailprogramma</a>
+    <button type="button" class="btn" id="copy">Kopieer antwoorden</button>`;
+  $("retry").onclick = () => { screen = "review"; render(); };
+  $("copy").onclick = () => {
+    const ta = $("f_copy");
+    navigator.clipboard?.writeText(txt).then(() => { $("err").textContent = "Gekopieerd. Plak het in een mail aan " + MAILADRES + "."; })
+      .catch(() => { ta.focus(); ta.select(); $("err").textContent = "Selecteer de tekst en kopieer met Ctrl+C of Cmd+C."; });
+    if (!navigator.clipboard) { ta.focus(); ta.select(); $("err").textContent = "Selecteer de tekst en kopieer met Ctrl+C of Cmd+C."; }
+  };
+}
+
+open();
+</script>
+
+</body>
+</html>

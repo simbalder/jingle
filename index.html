@@ -150,7 +150,7 @@ button.song:hover { border-color: var(--accent); }
     <div class="wave" aria-hidden="true"><span style="height:40%"></span><span style="height:75%;animation-delay:.1s"></span><span style="height:55%;animation-delay:.2s"></span><span style="height:100%;animation-delay:.3s"></span><span style="height:65%;animation-delay:.4s"></span><span style="height:85%;animation-delay:.5s"></span><span style="height:45%;animation-delay:.6s"></span><span style="height:70%;animation-delay:.7s"></span></div>
     <div class="eyebrow">Jingle op maat</div>
     <h1>Je bedrijf, in een paar seconden muziek.</h1>
-    <p>Beantwoord 18 korte vragen over je bedrijf en de sfeer die je zoekt. Daarna maak ik een jingle die bij je past. Het invullen duurt ongeveer vijf minuten.</p>
+    <p>Beantwoord <span id="qCount">20</span> korte vragen over je bedrijf en de sfeer die je zoekt. Daarna maak ik een jingle die bij je past. Het invullen duurt ongeveer vijf minuten.</p>
     <button class="btn big" id="openBtn" type="button">Start de vragenlijst</button>
   </div>
 </main>
@@ -176,6 +176,9 @@ const MAILADRES = "simon.balder@gmail.com";
 
 const Q = [
   { id: "bedrijf", type: "text", req: true, title: "Hoe heet je bedrijf?", ph: "Bijv. Bakkerij De Molen" },
+  { id: "website", type: "text", title: "Wat is de website van je bedrijf?", help: "Laat leeg als je geen website hebt.", ph: "Bijv. www.bakkerijdemolen.nl" },
+  { id: "toestemming", type: "single", req: true, title: "Mogen we teksten en informatie van je website gebruiken in de jingle?", help: "Bijvoorbeeld je slogan, producten of een zin die bij je bedrijf hoort.",
+    opts: ["Ja, dat mag", "Ja, maar overleg eerst wat je gebruikt", "Nee, liever niet", "Ik heb geen website"] },
   { id: "wat", type: "textarea", req: true, title: "Wat doet je bedrijf?", help: "Een paar zinnen is genoeg. Wat verkoop of doe je, en voor wie?" },
   { id: "slogan", type: "text", title: "Heb je een slogan die erin moet?", help: "Laat leeg als je nog geen slogan hebt, dan bedenk ik er een.", ph: "Bijv. Elke dag vers, elke dag De Molen" },
   { id: "horen", type: "multi", title: "Wat moet er letterlijk in te horen zijn?", help: "Kies alles wat gezongen of gezegd moet worden.",
@@ -201,7 +204,7 @@ const Q = [
   { id: "extra", type: "textarea", title: "Nog iets wat ik moet weten?", help: "Een deadline, het verhaal achter je bedrijf, of iets anders." },
 ];
 const LABELS = {
-  bedrijf: "Bedrijf", wat: "Wat doet het bedrijf", slogan: "Slogan", horen: "Moet erin te horen zijn", gebruik: "Gebruik",
+  bedrijf: "Bedrijf", website: "Website", toestemming: "Content van website gebruiken", wat: "Wat doet het bedrijf", slogan: "Slogan", horen: "Moet erin te horen zijn", gebruik: "Gebruik",
   lengte: "Lengte", doelgroep: "Doelgroep", woorden: "Drie woorden", sfeer: "Sfeer", stijl: "Muziekstijl", tempo: "Tempo",
   stem: "Stem", taal: "Taal", voorbeeld: "Mag lijken op", nummers: "Inspiratienummers", niet: "Absoluut niet", naam: "Naam", email: "E-mail", tel: "Telefoon", extra: "Extra",
 };
@@ -481,6 +484,7 @@ function renderFallback() {
   };
 }
 
+$("qCount").textContent = Q.length;
 open();
 </script>
 

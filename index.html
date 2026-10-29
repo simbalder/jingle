@@ -76,7 +76,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .dialog {
   width: 100%; max-width: 580px; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: hidden;
   background: var(--surface); border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.28);
-  display: grid; grid-template-rows: auto 1fr auto;
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
 }
 .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 22px 0; }
 .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 500; }
@@ -85,8 +85,8 @@ button, input, textarea { font: inherit; color: inherit; }
 .meter i { flex: 1; height: 6px; border-radius: 2px; background: var(--line); transition: background .25s; }
 .meter i.on { background: var(--accent); }
 .meter i.now { background: var(--signal); }
-.dlg-body { padding: 26px 22px 8px; display: grid; gap: 14px; align-content: start; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-.dialog > .dlg-body { min-height: min(300px, 50vh); }
+.dlg-body { padding: 26px 22px 8px; display: grid; grid-auto-rows: max-content; gap: 14px; align-content: start; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.dialog > .dlg-body { min-height: 0; }
 .dlg-body h2 { font-family: var(--display); font-weight: 800; font-size: clamp(23px, 4.6vw, 30px); line-height: 1.12; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
 .help { margin: 0; color: var(--muted); font-size: 15px; }
 .opt { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
@@ -105,8 +105,23 @@ textarea { min-height: 110px; resize: vertical; }
 .dlg-foot .spacer { flex: 1; }
 .kbd { font-size: 12px; color: var(--muted); align-self: center; }
 
+/* Nummers zoeken */
+.song-search { display: flex; gap: 8px; }
+.song-search input { flex: 1; min-width: 0; }
+.results, .picked { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.song { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--chip); }
+.song img, .song .noart { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--line); }
+.song b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song small { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song .acts { display: flex; gap: 4px; align-items: center; }
+.song .acts button, .song .acts a { border: 0; background: none; color: var(--accent); font-weight: 600; cursor: pointer; padding: 6px 8px; font-size: 14px; text-decoration: none; }
+button.song { width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+button.song:hover { border-color: var(--accent); }
+.picked .song { background: var(--surface); border-color: var(--accent); }
+.mini { font-size: 13px; color: var(--muted); margin: 0; }
+
 /* Overzicht */
-.review { display: grid; gap: 0; border: 1.5px solid var(--line); border-radius: 14px; overflow: hidden; }
+.review { display: grid; gap: 0; border: 1.5px solid var(--line); border-radius: 14px; margin: 0; }
 .review div { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 14px; border-top: 1px solid var(--line); }
 .review div:first-child { border-top: 0; }
 .review dt { font-size: 13px; color: var(--muted); grid-column: 1; }
@@ -135,7 +150,7 @@ textarea { min-height: 110px; resize: vertical; }
     <div class="wave" aria-hidden="true"><span style="height:40%"></span><span style="height:75%;animation-delay:.1s"></span><span style="height:55%;animation-delay:.2s"></span><span style="height:100%;animation-delay:.3s"></span><span style="height:65%;animation-delay:.4s"></span><span style="height:85%;animation-delay:.5s"></span><span style="height:45%;animation-delay:.6s"></span><span style="height:70%;animation-delay:.7s"></span></div>
     <div class="eyebrow">Jingle op maat</div>
     <h1>Je bedrijf, in een paar seconden muziek.</h1>
-    <p>Beantwoord 17 korte vragen over je bedrijf en de sfeer die je zoekt. Daarna maak ik een jingle die bij je past. Het invullen duurt ongeveer vijf minuten.</p>
+    <p>Beantwoord 18 korte vragen over je bedrijf en de sfeer die je zoekt. Daarna maak ik een jingle die bij je past. Het invullen duurt ongeveer vijf minuten.</p>
     <button class="btn big" id="openBtn" type="button">Start de vragenlijst</button>
   </div>
 </main>
@@ -180,6 +195,7 @@ const Q = [
     opts: ["Mannenstem", "Vrouwenstem", "Duet", "Koor of groep", "Geen zang, alleen muziek", "Maakt niet uit"] },
   { id: "taal", type: "single", req: true, title: "In welke taal?", opts: ["Nederlands", "Engels", "Nederlands en Engels", "Dialect of streektaal", "Anders"] },
   { id: "voorbeeld", type: "text", title: "Op welke jingle of artiest mag het lijken?", help: "Een voorbeeld helpt enorm, maar mag ook leeg blijven.", ph: "Bijv. de jingle van Kruidvat, of iets als Racoon" },
+  { id: "nummers", type: "songs", max: 3, title: "Welke nummers mogen als inspiratie dienen?", help: "Zoek maximaal drie nummers waarvan je het gevoel of de sfeer mooi vindt. Het hoeft geen jingle te zijn." },
   { id: "niet", type: "text", title: "Wat wil je absoluut niet?", ph: "Bijv. geen rap, niet te zoetsappig" },
   { id: "contact", type: "contact", req: true, title: "Waar kan ik je bereiken?", help: "Je krijgt de jingle en eventuele vragen via dit adres." },
   { id: "extra", type: "textarea", title: "Nog iets wat ik moet weten?", help: "Een deadline, het verhaal achter je bedrijf, of iets anders." },
@@ -187,7 +203,7 @@ const Q = [
 const LABELS = {
   bedrijf: "Bedrijf", wat: "Wat doet het bedrijf", slogan: "Slogan", horen: "Moet erin te horen zijn", gebruik: "Gebruik",
   lengte: "Lengte", doelgroep: "Doelgroep", woorden: "Drie woorden", sfeer: "Sfeer", stijl: "Muziekstijl", tempo: "Tempo",
-  stem: "Stem", taal: "Taal", voorbeeld: "Mag lijken op", niet: "Absoluut niet", naam: "Naam", email: "E-mail", tel: "Telefoon", extra: "Extra",
+  stem: "Stem", taal: "Taal", voorbeeld: "Mag lijken op", nummers: "Inspiratienummers", niet: "Absoluut niet", naam: "Naam", email: "E-mail", tel: "Telefoon", extra: "Extra",
 };
 
 let A = {};
@@ -222,6 +238,7 @@ function render() {
 
 function renderQ() {
   const q = Q[idx];
+  body.onclick = null;
   paintMeter(idx);
   count.textContent = `Vraag ${idx + 1} van ${Q.length}`;
   let h = `<h2 id="qTitle">${esc(q.title)}</h2>`;
@@ -229,11 +246,17 @@ function renderQ() {
   if (!q.req) h += `<span class="opt">Niet verplicht</span>`;
   const v = A[q.id];
   if (q.type === "text") h += `<input type="text" id="f_${q.id}" value="${esc(v || "")}" placeholder="${esc(q.ph || "")}" aria-labelledby="qTitle">`;
-  if (q.type === "textarea") h += `<textarea id="f_${q.id}" aria-labelledby="qTitle">${esc(v || "")}</textarea>`;
+  if (q.type === "textarea") h += `<textarea id="f_${q.id}" aria-labelledby="qTitle" placeholder="${esc(q.ph || "")}">${esc(v || "")}</textarea>`;
   if (q.type === "single" || q.type === "multi") {
     const sel = q.type === "multi" ? (v || []) : [v];
     h += `<div class="chips" role="group" aria-labelledby="qTitle">` +
       q.opts.map((o) => `<button type="button" class="chip" aria-pressed="${sel.includes(o)}" data-o="${esc(o)}">${esc(o)}</button>`).join("") + `</div>`;
+  }
+  if (q.type === "songs") {
+    const list = v || [];
+    h += `<ul class="picked" id="picked">${list.map((x, i) => songRow(x, `<button type="button" data-rm="${i}">Verwijder</button>`)).join("")}</ul>`;
+    if (list.length < q.max) h += `<div class="song-search"><input type="text" id="f_songq" placeholder="Zoek op titel of artiest" aria-label="Zoek een nummer" autocomplete="off"><button type="button" class="btn ghost" id="songGo">Zoek</button></div>
+      <ul class="results" id="results"></ul><p class="mini" id="songMsg">${list.length ? `Nog ${q.max - list.length} te gaan, of klik op Volgende.` : "Kies een resultaat om het toe te voegen. Met ▶ hoor je een fragment."}</p>`;
   }
   if (q.type === "contact") {
     const c = v || {};
@@ -255,6 +278,8 @@ function renderQ() {
     body.querySelector(`.chip[data-o="${CSS.escape(o)}"]`)?.focus();
   });
 
+  if (q.type === "songs") wireSongs(q);
+
   foot.innerHTML = `${idx > 0 ? '<button type="button" class="btn ghost" id="back">Vorige</button>' : ""}
     <span class="spacer"></span><span class="kbd">Enter = verder</span>
     <button type="button" class="btn" id="next">${idx === Q.length - 1 || fromReview ? "Naar overzicht" : (!q.req && isEmpty(q) ? "Overslaan" : "Volgende")}</button>`;
@@ -262,9 +287,62 @@ function renderQ() {
   $("next").onclick = next;
   body.oninput = () => { collect(); const n = $("next"); if (!q.req && idx < Q.length - 1) n.textContent = isEmpty(q) ? "Overslaan" : "Volgende"; };
   body.onsubmit = (e) => { e.preventDefault(); next(); };
-  body.onkeydown = (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); next(); } };
+  body.onkeydown = (e) => { if (e.key === "Enter" && e.target.tagName === "INPUT") { e.preventDefault(); if (e.target.id === "f_songq") searchSongs(e.target.value); else next(); } };
   const first = body.querySelector("input, textarea");
   if (first) first.focus(); else body.querySelector(".chip")?.focus();
+}
+
+// Nummers zoeken via de openbare iTunes-zoekdienst (geen sleutel nodig, JSONP zodat het overal werkt).
+let audio = null, jsonpN = 0;
+function spotifyUrl(x) { return "https://open.spotify.com/search/" + encodeURIComponent(`${x.t} ${x.a}`); }
+function songRow(x, acts) {
+  const art = x.art ? `<img src="${esc(x.art)}" alt="" loading="lazy">` : `<span class="noart"></span>`;
+  const play = x.prev ? `<button type="button" data-play="${esc(x.prev)}" aria-label="Fragment afspelen">▶</button>` : "";
+  return `<li class="song">${art}<span><b>${esc(x.t)}</b><small>${esc(x.a)}</small></span><span class="acts">${play}<a href="${esc(spotifyUrl(x))}" target="_blank" rel="noopener">Spotify</a>${acts}</span></li>`;
+}
+function jsonp(url) {
+  return new Promise((res, rej) => {
+    const cb = "_itunes" + (++jsonpN), sc = document.createElement("script");
+    const t = setTimeout(() => { cleanup(); rej(new Error("timeout")); }, 8000);
+    function cleanup() { clearTimeout(t); delete window[cb]; sc.remove(); }
+    window[cb] = (d) => { cleanup(); res(d); };
+    sc.onerror = () => { cleanup(); rej(new Error("netwerk")); };
+    sc.src = url + "&callback=" + cb;
+    document.head.appendChild(sc);
+  });
+}
+let lastResults = [];
+async function searchSongs(term) {
+  term = term.trim(); if (!term) return;
+  const msg = $("songMsg"), ul = $("results");
+  msg.textContent = "Zoeken…";
+  try {
+    const d = await jsonp("https://itunes.apple.com/search?media=music&entity=song&limit=6&country=NL&term=" + encodeURIComponent(term));
+    lastResults = (d.results || []).map((r) => ({ t: r.trackName, a: r.artistName, art: r.artworkUrl100 || r.artworkUrl60 || "", prev: r.previewUrl || "", url: r.trackViewUrl || "" }));
+  } catch (e) { lastResults = []; }
+  ul.innerHTML = lastResults.map((x, i) => songRow(x, `<button type="button" data-add="${i}">Kies</button>`)).join("");
+  msg.innerHTML = lastResults.length ? "Klik op Kies bij het juiste nummer. Met ▶ hoor je een fragment, Spotify opent het nummer daar."
+    : `Niets gevonden. <button type="button" class="chip" id="addFree">Toch toevoegen als “${esc(term)}”</button>`;
+  const free = $("addFree"); if (free) free.onclick = () => addSong({ t: term, a: "zelf ingevuld", art: "", prev: "", url: "" });
+}
+function addSong(x) {
+  const q = Q[idx]; const list = A[q.id] || [];
+  if (list.length >= q.max) return;
+  A[q.id] = [...list, x]; save(); stopAudio(); renderQ();
+}
+function stopAudio() { if (audio) { audio.pause(); audio = null; } }
+function wireSongs(q) {
+  const go = $("songGo"); if (go) go.onclick = () => searchSongs($("f_songq").value);
+  body.onclick = (e) => {
+    const t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.add != null) addSong(lastResults[+t.dataset.add]);
+    if (t.dataset.rm != null) { A[q.id] = (A[q.id] || []).filter((_, i) => i !== +t.dataset.rm); save(); renderQ(); }
+    if (t.dataset.play) {
+      const same = audio && audio.src === t.dataset.play; stopAudio();
+      body.querySelectorAll("[data-play]").forEach((b) => b.textContent = "▶");
+      if (!same) { audio = new Audio(t.dataset.play); audio.play().catch(() => {}); t.textContent = "❚❚"; audio.onended = () => { t.textContent = "▶"; audio = null; }; }
+    }
+  };
 }
 
 function collect() {
@@ -279,6 +357,7 @@ function isEmpty(q) {
   return v == null || v === "" || (Array.isArray(v) && !v.length);
 }
 function next() {
+  stopAudio();
   collect();
   const q = Q[idx];
   if (q.type === "contact") {
@@ -303,12 +382,14 @@ function rows() {
       return;
     }
     const v = A[q.id];
+    if (q.type === "songs") { out.push([LABELS[q.id], (v || []).map((x) => `${x.t} – ${x.a}`).join("\n"), i]); return; }
     out.push([LABELS[q.id], Array.isArray(v) ? v.join(", ") : (v || ""), i]);
   });
   return out;
 }
 
 function renderReview() {
+  body.onclick = null; stopAudio();
   screen = "review";
   paintMeter(Q.length);
   count.textContent = "Overzicht";
@@ -353,6 +434,7 @@ async function send() {
   const btn = $("send"); btn.disabled = true; btn.textContent = "Bezig met versturen…";
   const payload = { access_key: ACCESS_KEY, subject: `Nieuwe jingle-aanvraag: ${A.bedrijf || "onbekend bedrijf"}`, from_name: "Jingle-vragenbox", replyto: A.contact?.email || "", botcheck: "" };
   rows().forEach(([k, v]) => { payload[k] = v || "-"; });
+  if ((A.nummers || []).length) payload["Inspiratienummers (links)"] = A.nummers.map((x) => `${x.t} – ${x.a}\nSpotify: ${spotifyUrl(x)}${x.url ? "\nApple Music: " + x.url : ""}`).join("\n\n");
   payload["Suno-schets"] = sunoSketch();
   const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 15000);
   try {

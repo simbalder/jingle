@@ -194,6 +194,7 @@ let A = {};
 let idx = 0;
 let screen = "q"; // q | review | done | fallback
 let fromReview = false;
+let lastError = "";
 try { const s = JSON.parse(localStorage.getItem("jingleDraft") || "null"); if (s) { A = s.A || {}; idx = Math.min(s.idx || 0, Q.length); } } catch (e) {}
 function save() { try { localStorage.setItem("jingleDraft", JSON.stringify({ A, idx })); } catch (e) {} }
 function clearDraft() { try { localStorage.removeItem("jingleDraft"); } catch (e) {} }
@@ -359,8 +360,9 @@ async function send() {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal,
     });
     const j = await r.json();
+    lastError = j.message || "";
     screen = j.success === true || String(j.success) === "true" ? "done" : "fallback";
-  } catch (e) { screen = "fallback"; }
+  } catch (e) { screen = "fallback"; lastError = e.name === "AbortError" ? "time-out" : (e.message || String(e)); }
   clearTimeout(timer);
   if (screen === "done") clearDraft();
   render();
@@ -383,6 +385,7 @@ function renderFallback() {
     <p class="help">Automatisch versturen lukte niet. Je antwoorden zijn niet kwijt: kopieer ze hieronder en mail ze naar</p>
     <p class="mail">${esc(MAILADRES)}</p>
     <textarea class="copybox" id="f_copy" readonly>${esc(txt)}</textarea>
+    <p class="help" style="font-size:12px">Technische melding: ${esc(lastError || "onbekend")}</p>
     <p class="err" id="err" role="status"></p>`;
   foot.innerHTML = `<button type="button" class="btn ghost" id="retry">Opnieuw proberen</button><span class="spacer"></span>
     <a class="btn ghost" href="${esc(mailto)}" target="_blank" rel="noopener">Open mailprogramma</a>

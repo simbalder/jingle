@@ -74,7 +74,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .scrim { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; z-index: 50;
   padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
 .dialog {
-  width: 100%; max-width: 580px; max-height: 100%; overflow: auto;
+  width: 100%; max-width: 580px; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: hidden;
   background: var(--surface); border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.28);
   display: grid; grid-template-rows: auto 1fr auto;
 }
@@ -85,7 +85,8 @@ button, input, textarea { font: inherit; color: inherit; }
 .meter i { flex: 1; height: 6px; border-radius: 2px; background: var(--line); transition: background .25s; }
 .meter i.on { background: var(--accent); }
 .meter i.now { background: var(--signal); }
-.dlg-body { padding: 26px 22px 8px; display: grid; gap: 14px; align-content: start; min-height: 300px; }
+.dlg-body { padding: 26px 22px 8px; display: grid; gap: 14px; align-content: start; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.dialog > .dlg-body { min-height: min(300px, 50vh); }
 .dlg-body h2 { font-family: var(--display); font-weight: 800; font-size: clamp(23px, 4.6vw, 30px); line-height: 1.12; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
 .help { margin: 0; color: var(--muted); font-size: 15px; }
 .opt { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
@@ -118,7 +119,7 @@ textarea { min-height: 110px; resize: vertical; }
 
 @media (max-width: 480px) {
   .scrim { padding: 0; place-items: stretch; }
-  .dialog { border-radius: 0; max-width: none; height: 100%; }
+  .dialog { border-radius: 0; max-width: none; height: 100%; max-height: none; }
   .dlg-head { padding-top: max(18px, env(safe-area-inset-top, 0px)); }
   .dlg-foot { padding-bottom: max(22px, env(safe-area-inset-bottom, 0px)); }
   .kbd { display: none; }
@@ -356,7 +357,8 @@ async function send() {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal,
     });
     const j = await r.json();
-    screen = String(j.success) === "true" ? "done" : "fallback";
+    // Bij "needs Activation" bewaart FormSubmit de inzending en levert hem na bevestiging alsnog af.
+    screen = String(j.success) === "true" || /activat/i.test(j.message || "") ? "done" : "fallback";
   } catch (e) { screen = "fallback"; }
   clearTimeout(timer);
   if (screen === "done") clearDraft();

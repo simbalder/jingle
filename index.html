@@ -339,11 +339,14 @@ const EN = {
 function sunoSketch() {
   const t = (x) => EN[x] ?? x;
   const tempo = A.tempo === "Rustig" ? "slow tempo" : t(A.tempo);
-  const parts = [...(A.stijl || []).map(t), ...(A.sfeer || []).map(t), tempo, t(A.stem), t(A.taal), "short catchy commercial jingle", "memorable hook", "clean sound logo ending"].filter(Boolean);
-  const lyr = A.stem === "Geen zang, alleen muziek" ? "[Instrumental]\n[Sound logo]" : `[Hook]\n${A.slogan || "(slogan nog te bedenken)"}\n\n[Outro]\n${A.bedrijf || ""}`;
+  const parts = [...(A.stijl || []).map(t), ...(A.sfeer || []).map(t), tempo, t(A.stem), t(A.taal), "subtle heartbeat kick drum pulse underneath", "short catchy commercial jingle", "memorable hook", "clean sound logo ending"].filter(Boolean);
+  // Vaste signatuur (zoals bij The Day Patients): een hartslag onder de beat. Staat alleen in de mail aan Simon.
+  const lyr = A.stem === "Geen zang, alleen muziek"
+    ? "[Intro: soft heartbeat kick alone]\n[Instrumental: heartbeat kick keeps time under the beat]\n[Sound logo: music stops, one last heartbeat]"
+    : `[Intro: soft heartbeat kick alone, band joins]\n\n[Hook: heartbeat kick under the beat]\n${A.slogan || "(slogan nog te bedenken)"}\n\n[Outro: music stops, one last heartbeat]\n${A.bedrijf || ""}`;
   return `Title: ${A.bedrijf || ""} Jingle\nStyle: ${parts.join(", ")}\nLength: ${A.lengte || ""}\nLyrics:\n${lyr}`;
 }
-function plainText() { return rows().map(([k, v]) => `${k}: ${v || "-"}`).join("\n") + "\n\n--- Suno-schets ---\n" + sunoSketch(); }
+function plainText() { return rows().map(([k, v]) => `${k}: ${v || "-"}`).join("\n"); }
 
 async function send() {
   if ($("f_hp")?.value) { screen = "done"; return render(); }
